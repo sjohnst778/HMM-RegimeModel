@@ -11,7 +11,7 @@ data/cache/*.csv
 models/saved/
 
 # Outputs — track scores.csv so Streamlit Cloud can read it; ignore everything else
-output/
+output/*
 !output/scores.csv
 
 # Eikon API key (if ever stored in a local file)
