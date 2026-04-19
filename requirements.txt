@@ -1,4 +1,6 @@
 bayesian_changepoint_detection==0.2.dev1
+plotly==6.7.0
+streamlit==1.56.0
 beautifulsoup4==4.14.3
 certifi==2026.2.25
 cffi==2.0.0

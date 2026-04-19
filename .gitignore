@@ -10,8 +10,9 @@ data/cache/*.csv
 # Model bundles — large files, don't commit
 models/saved/
 
-# Outputs
+# Outputs — track scores.csv so Streamlit Cloud can read it; ignore everything else
 output/
+!output/scores.csv
 
 # Eikon API key (if ever stored in a local file)
 .eikon_key
