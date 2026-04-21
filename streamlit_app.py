@@ -327,7 +327,6 @@ def main():
     st.subheader("Weekly History (Last 8 Weeks)")
 
     weekly = scores.resample("W-FRI").last().tail(8).copy()
-    weekly.index = weekly.index.strftime("%d %b %Y")
     weekly["Regime"] = weekly["hmm_state"].map(REGIME_LABELS)
     weekly["Alert"] = weekly["alert_p90"].map({True: "p90 🔴", False: "🟢"})
 
@@ -340,11 +339,14 @@ def main():
         "bocpd_break_freq_30d":  "Break freq 30d",
         "risk_score_raw":        "Score (raw)",
         "risk_score_calibrated": "Score (calib)",
-    })
+    }).sort_index(ascending=False)
 
     st.dataframe(
-        display.sort_index(ascending=False),
+        display
         use_container_width=True,
+        column_config={
+            "_index": st.column_config.DateColumn("Date", format="DD MMM YYYY"),
+        },
     )
 
     st.markdown("---")
