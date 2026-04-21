@@ -342,7 +342,7 @@ def main():
     }).sort_index(ascending=False)
 
     st.dataframe(
-        display
+        display,
         use_container_width=True,
         column_config={
             "_index": st.column_config.DateColumn("Date", format="DD MMM YYYY"),
