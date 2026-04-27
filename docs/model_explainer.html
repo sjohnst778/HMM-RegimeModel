@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Market Downturn Early Warning System — Model Overview</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-size: 14px;
+      line-height: 1.6;
+      color: #1a1a2e;
+      background: #f7f8fc;
+      padding: 32px 24px;
+    }
+
+    .page {
+      max-width: 960px;
+      margin: 0 auto;
+      background: #ffffff;
+      border-radius: 10px;
+      box-shadow: 0 2px 20px rgba(0,0,0,0.08);
+      overflow: hidden;
+    }
+
+    /* ── Header ── */
+    .header {
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 60%, #0f3460 100%);
+      color: white;
+      padding: 32px 40px 28px;
+    }
+    .header-tag {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: #7ec8e3;
+      margin-bottom: 8px;
+    }
+    .header h1 {
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+      margin-bottom: 10px;
+    }
+    .header p {
+      font-size: 13.5px;
+      color: #c8d6e5;
+      max-width: 700px;
+      line-height: 1.65;
+    }
+
+    /* ── Body ── */
+    .body {
+      padding: 32px 40px 36px;
+    }
+
+    /* ── Flow diagram ── */
+    .flow {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0;
+      margin-bottom: 32px;
+      flex-wrap: wrap;
+    }
+    .flow-box {
+      background: #f0f4ff;
+      border: 1.5px solid #c5d0f0;
+      border-radius: 8px;
+      padding: 10px 18px;
+      text-align: center;
+      font-size: 12.5px;
+      font-weight: 600;
+      color: #1a1a2e;
+      min-width: 110px;
+    }
+    .flow-box.highlight {
+      background: #1a1a2e;
+      border-color: #1a1a2e;
+      color: white;
+    }
+    .flow-box.accent {
+      background: #e8f4fd;
+      border-color: #90c8f0;
+      color: #0f3460;
+    }
+    .flow-box small {
+      display: block;
+      font-weight: 400;
+      font-size: 11px;
+      margin-top: 2px;
+      opacity: 0.75;
+    }
+    .flow-arrow {
+      font-size: 18px;
+      color: #a0aec0;
+      padding: 0 8px;
+      flex-shrink: 0;
+    }
+
+    /* ── Two-column model cards ── */
+    .model-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-bottom: 24px;
+    }
+    @media (max-width: 650px) { .model-grid { grid-template-columns: 1fr; } }
+
+    .card {
+      border: 1.5px solid #e2e8f0;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .card-header {
+      padding: 12px 18px 10px;
+      border-bottom: 1.5px solid #e2e8f0;
+    }
+    .card-header.hmm  { background: #f0f4ff; }
+    .card-header.bocpd { background: #edf7f0; }
+    .card-label {
+      font-size: 10.5px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      margin-bottom: 2px;
+    }
+    .card-label.hmm   { color: #3a56b5; }
+    .card-label.bocpd { color: #2e7d52; }
+    .card-header h2 {
+      font-size: 15px;
+      font-weight: 700;
+      color: #1a1a2e;
+      margin-bottom: 1px;
+    }
+    .card-header p {
+      font-size: 12px;
+      color: #6b7a99;
+    }
+    .card-body {
+      padding: 16px 18px;
+    }
+    .card-body p {
+      font-size: 13px;
+      color: #2d3748;
+      margin-bottom: 12px;
+      line-height: 1.65;
+    }
+    .card-body p:last-child { margin-bottom: 0; }
+
+    /* ── Stat pills ── */
+    .stat-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin: 10px 0 14px;
+    }
+    .stat {
+      border-radius: 6px;
+      padding: 5px 10px;
+      font-size: 11.5px;
+      font-weight: 600;
+    }
+    .stat.crisis { background: #fde8e8; color: #9b1c1c; }
+    .stat.bear   { background: #fef3cd; color: #92400e; }
+    .stat.bull   { background: #d1fae5; color: #065f46; }
+    .stat.neutral { background: #e2e8f0; color: #2d3748; }
+
+    /* ── Lead-time table ── */
+    .lead-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12.5px;
+      margin-top: 10px;
+    }
+    .lead-table th {
+      text-align: left;
+      padding: 5px 8px;
+      border-bottom: 1.5px solid #c6e6d2;
+      color: #2e7d52;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+    }
+    .lead-table td {
+      padding: 5px 8px;
+      border-bottom: 1px solid #edf2e9;
+      color: #2d3748;
+    }
+    .lead-table tr:last-child td { border-bottom: none; }
+    .lead-days {
+      font-weight: 700;
+      color: #2e7d52;
+    }
+
+    /* ── Ensemble section ── */
+    .ensemble {
+      background: #1a1a2e;
+      border-radius: 8px;
+      padding: 20px 24px;
+      margin-bottom: 24px;
+      color: white;
+    }
+    .ensemble h3 {
+      font-size: 14px;
+      font-weight: 700;
+      color: #7ec8e3;
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+      margin-bottom: 10px;
+    }
+    .ensemble p {
+      font-size: 13px;
+      color: #c8d6e5;
+      line-height: 1.7;
+      margin-bottom: 10px;
+    }
+    .ensemble p:last-child { margin-bottom: 0; }
+    .ensemble strong { color: #ffffff; }
+
+    /* ── Dashboard guide ── */
+    .dash-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-top: 4px;
+    }
+    @media (max-width: 650px) { .dash-grid { grid-template-columns: 1fr; } }
+
+    .dash-item {
+      background: #f7f8fc;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 7px;
+      padding: 12px 14px;
+    }
+    .dash-item-label {
+      font-size: 10.5px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #6b7a99;
+      margin-bottom: 4px;
+    }
+    .dash-item p {
+      font-size: 12.5px;
+      color: #2d3748;
+      line-height: 1.55;
+    }
+
+    /* ── Footer ── */
+    .footer {
+      border-top: 1.5px solid #e2e8f0;
+      padding: 16px 40px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11.5px;
+      color: #a0aec0;
+    }
+    .section-title {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+      color: #6b7a99;
+      margin-bottom: 14px;
+    }
+    hr.divider {
+      border: none;
+      border-top: 1.5px solid #e2e8f0;
+      margin: 24px 0;
+    }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="header-tag">Market Intelligence</div>
+    <h1>Early Warning System for Sustained Market Downturns</h1>
+    <p>
+      The dashboard combines two complementary statistical models — a Hidden Markov Model (HMM)
+      and a Bayesian Online Changepoint Detector (BOCPD) — to distinguish persistent bear and
+      crisis regimes from ordinary volatility. This note explains how each layer works and what
+      the dashboard signals mean.
+    </p>
+  </div>
+
+  <!-- Body -->
+  <div class="body">
+
+    <!-- Flow diagram -->
+    <div class="section-title">How the signals flow</div>
+    <div class="flow">
+      <div class="flow-box accent">
+        Market Data
+        <small>S&amp;P 500, FTSE, Nikkei,<br>Hang Seng, Rates, VIX</small>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-box" style="background:#f0f4ff;border-color:#c5d0f0;">
+        HMM
+        <small>Regime state</small>
+      </div>
+      <div class="flow-arrow">↘</div>
+      <div class="flow-box highlight" style="margin-top:28px;">
+        Risk Score
+        <small>[0 → 1]</small>
+      </div>
+      <div class="flow-arrow" style="margin-top:28px;">→</div>
+      <div class="flow-box accent" style="margin-top:28px;">
+        Dashboard
+        <small>Alert + charts</small>
+      </div>
+      <div class="flow-arrow" style="position:relative;top:-28px;">↗</div>
+      <div class="flow-box" style="background:#edf7f0;border-color:#a8d5b8;position:relative;top:-56px;">
+        BOCPD
+        <small>Structural breaks</small>
+      </div>
+    </div>
+
+    <!-- Model cards -->
+    <div class="section-title">The two core models</div>
+    <div class="model-grid">
+
+      <!-- HMM card -->
+      <div class="card">
+        <div class="card-header hmm">
+          <div class="card-label hmm">Layer 1 · Regime Identification</div>
+          <h2>Hidden Markov Model</h2>
+          <p>What market state are we in right now?</p>
+        </div>
+        <div class="card-body">
+          <p>
+            Financial markets don't move randomly — they cycle through distinct regimes that differ
+            in trend, volatility and drawdown depth. The HMM learns these regimes from history and,
+            given today's data, infers which one we are most likely in.
+          </p>
+          <p>
+            <strong>How it works:</strong> The model treats the true market regime as a hidden variable
+            that cannot be observed directly. It observes three daily signals from the S&amp;P 500 —
+            the day's return, 21-day rolling volatility, and how far prices sit below their one-year
+            high — and uses these to estimate the probability of three hidden states:
+          </p>
+          <div class="stat-row">
+            <span class="stat crisis">Crisis &nbsp;·&nbsp; vol ≈ 26%, drawdown ≈ −17%</span>
+            <span class="stat bear">Bear &nbsp;·&nbsp; vol ≈ 13%, drawdown ≈ −3%</span>
+            <span class="stat bull">Bull &nbsp;·&nbsp; vol ≈ 9%, drawdown ≈ −1%</span>
+          </div>
+          <p>
+            <strong>Persistence filter:</strong> Raw HMM posteriors can flicker day-to-day.
+            A 20-day rolling average and a minimum-duration rule mean the model only declares
+            a regime change when the evidence is sustained — not on a single bad session.
+            Typical regimes last 54–166 trading days.
+          </p>
+          <p>
+            <strong>Dashboard output:</strong> The current regime label (Bull / Bear / Crisis)
+            and P(Crisis) — the probability the market is in a crisis state. P(Crisis) feeds
+            directly into the risk score even when the headline label shows Bear.
+          </p>
+        </div>
+      </div>
+
+      <!-- BOCPD card -->
+      <div class="card">
+        <div class="card-header bocpd">
+          <div class="card-label bocpd">Layer 2 · Early Warning</div>
+          <h2>Bayesian Changepoint Detector</h2>
+          <p>Are cross-market relationships breaking down?</p>
+        </div>
+        <div class="card-body">
+          <p>
+            Major downturns rarely arrive without warning in the underlying structure of markets.
+            Correlations between equity indices shift, the equity–rates relationship inverts
+            as capital flees to safety, and volatility regimes change — often weeks before
+            index levels reflect the stress.
+          </p>
+          <p>
+            <strong>How it works:</strong> BOCPD monitors 22 cross-asset series simultaneously:
+            pairwise correlations across US, UK, Japanese and Hong Kong equities, per-index
+            volatility series, and equity/rates cross-correlations that capture flight-to-safety
+            behaviour. For each series it maintains a probability distribution over how long
+            the current statistical regime has been running. When that distribution collapses
+            to a very short run-length, a structural break has been detected.
+          </p>
+          <p>
+            <strong>Why it leads:</strong> Structural deterioration in cross-market relationships
+            precedes price falls because it reflects positioning and risk-appetite shifts
+            before they are fully priced in. Validated lead times over four major crises:
+          </p>
+          <table class="lead-table">
+            <thead>
+              <tr><th>Event</th><th>BOCPD lead vs HMM</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Dot-com (2000)</td><td class="lead-days">43 days</td></tr>
+              <tr><td>Global Financial Crisis (2007)</td><td class="lead-days">28 days</td></tr>
+              <tr><td>Rate hike cycle (2022)</td><td class="lead-days">109 days</td></tr>
+            </tbody>
+          </table>
+          <p style="margin-top:10px;">
+            <strong>Dashboard output:</strong> Daily break probability and a 30-day break
+            frequency count. Frequency is more stable than the daily spike and is one of the
+            top five features in the ensemble.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- Ensemble -->
+    <div class="ensemble">
+      <h3>Combining the signals — the risk score</h3>
+      <p>
+        An <strong>XGBoost ensemble</strong> combines the HMM and BOCPD outputs with macro
+        features (volatility, drawdown, credit spreads) into a single <strong>risk score
+        between 0 and 1</strong>. The score is trained to predict whether the S&amp;P 500
+        will fall more than 10% within the next 20 trading days. All inputs are lagged by
+        one day to prevent any look-ahead bias.
+      </p>
+      <p>
+        Two versions of the score are produced. The <strong>raw score</strong> moves
+        continuously day-to-day and is used for alerts and trend tracking. A
+        <strong>calibrated score</strong> converts it to an approximate probability statement
+        (e.g. "~13% chance of a −10% drawdown in the next 20 days") and is more suitable
+        for stakeholder communication, though it can remain flat for several days when
+        conditions are stable. Alert flags are raised at the 90th and 95th historical
+        percentile of the raw score.
+      </p>
+    </div>
+
+    <!-- Dashboard guide -->
+    <div class="section-title">Reading the dashboard</div>
+    <div class="dash-grid">
+      <div class="dash-item">
+        <div class="dash-item-label">Alert Banner</div>
+        <p>Green / Amber / Red based on whether the raw risk score exceeds the p90 or p95
+        threshold. No alert does not mean no risk — it means risk is below the historical
+        top 10%.</p>
+      </div>
+      <div class="dash-item">
+        <div class="dash-item-label">KPI Cards</div>
+        <p>Five key metrics with day-on-day deltas: current regime, P(Crisis), BOCPD
+        30-day break count, raw risk score, and calibrated probability.</p>
+      </div>
+      <div class="dash-item">
+        <div class="dash-item-label">Risk Score Chart</div>
+        <p>Three-year history of the raw score with p90/p95 threshold lines overlaid.
+        The colour bar beneath shows the HMM regime at each point in time.</p>
+      </div>
+      <div class="dash-item">
+        <div class="dash-item-label">Signal Breakdown</div>
+        <p>90-day view of the three component signals — P(Crisis), BOCPD break probability,
+        and risk score — so you can see which layer is driving any elevated reading.</p>
+      </div>
+      <div class="dash-item">
+        <div class="dash-item-label">History Table</div>
+        <p>Eight-week rolling table of all key outputs. Useful for spotting gradual trend
+        changes that are not yet above alert thresholds.</p>
+      </div>
+      <div class="dash-item">
+        <div class="dash-item-label">Important caveat</div>
+        <p>The model detects slow-building structural deterioration. Pure exogenous shocks
+        (e.g. COVID-19) produce no build-up signal and will not trigger an early warning.</p>
+      </div>
+    </div>
+
+  </div><!-- /body -->
+
+  <!-- Footer -->
+  <div class="footer">
+    <span>HMM-RegimeModel &mdash; Internal Research</span>
+    <span>Model AUC: 0.650 &plusmn; 0.055 (5-fold walk-forward, 1995–present)</span>
+  </div>
+
+</div><!-- /page -->
+</body>
+</html>
