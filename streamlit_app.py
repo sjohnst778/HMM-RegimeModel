@@ -240,8 +240,6 @@ def main():
         f"**Viewing:** {actual_date}"
     )
     st.sidebar.caption("Scores refresh every 5 min. Run `pipeline/score.py` to update.")
-    st.sidebar.markdown("---")
-    st.sidebar.page_link("pages/01_Model_Overview.py", label="📖 How the model works")
 
     status = current_status(scores, scores_full)
 
